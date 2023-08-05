@@ -19,7 +19,7 @@ labels = open("../final_model/labels.txt", "r").readlines()
 camera = cv2.VideoCapture(0)
 
 while True:
-    # Load the image and convert it to grayscale.
+    # Load image from camera.
     ret, image = camera.read()
 
     if ret == False:
@@ -39,9 +39,6 @@ while True:
             y_down = int(min(box[1], box[3]))
             y_up = int(max(box[1], box[3]))
 
-            # print(x_left, x_right, y_down, y_up)
-            # print(type(x_left), type(x_right), type(y_down), type(y_up))
-
             cropped_faces_coords.append(
                 (x_left, y_down, x_right - x_left, y_up - y_down)
             )
@@ -51,7 +48,7 @@ while True:
     if len(cropped_faces_coords) == 0:
         print("Face Not Found!")
 
-    # Iterate over the detected faces
+    # Iterate over detected faces
 
     for x, y, w, h in cropped_faces_coords:
         # Crop the image (0.5 * length_face) cm above the face
