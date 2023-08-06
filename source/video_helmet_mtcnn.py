@@ -15,12 +15,24 @@ model = load_model("../final_model/keras_model.h5")
 # Grab the labels from the labels.txt file. This will be used later.
 labels = open("../final_model/labels.txt", "r").readlines()
 
-# Camera
-camera = cv2.VideoCapture(0)
+# Input video
+INPUT_PATH = "../data/betonsa_2.mp4"
+video = cv2.VideoCapture(INPUT_PATH)
 
-while True:
+# Output video
+OUT_PATH = f"../data/out_betonsa.mp4"
+frame_width = int(video.get(cv2.CAP_PROP_FRAME_WIDTH))
+frame_height = int(video.get(cv2.CAP_PROP_FRAME_HEIGHT))
+fps = int(video.get(cv2.CAP_PROP_FPS))
+fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+out = cv2.VideoWriter(OUT_PATH, fourcc, fps, (frame_width, frame_height))
+
+if video.isOpened() == False:
+    print("Could not open input video file!")
+
+while video.isOpened():
     # Load image from camera.
-    ret, image = camera.read()
+    ret, image = video.read()
 
     if ret == False:
         continue
@@ -96,7 +108,7 @@ while True:
     for i, face_label in enumerate(face_labels):
         color = (0, 0, 0)
         text = "Unknown"
-        if face_label == 0:
+        if face_label == 0 and float(face_sureness[i]) > 85:
             color = (0, 255, 0)
             text = "Helmet"
         else:
@@ -126,9 +138,11 @@ while True:
         )
 
     cv2.imshow("Helmet Detector", display)
+    out.write(display)
 
     if cv2.waitKey(1) == 27:
         break
 
-camera.release()
+video.release()
+out.release()
 cv2.destroyAllWindows()
