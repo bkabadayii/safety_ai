@@ -3,24 +3,24 @@ import cv2
 from ultralytics import YOLO
 import time
 import copy
+import math
 
-DEBUG_MODE = True
+# object detector model
+from object_detector import predict
+
+DEBUG_MODE = False
 
 VIDEO_NAME = "video0"
-VIDEO_PATH = f"../data/akcansa_share/{VIDEO_NAME}.mp4"
+VIDEO_PATH = f"../data_collection/video-data/recorded/{VIDEO_NAME}.mp4"
 # VIDEO_PATH = "../data/train6_nohelmet.jpg"
 
 CROP_AND_SAVE = False  # True if you want to crop and save body parts
-SAVE_PATH = f"../data/cropped_parts/{VIDEO_NAME}"
+SAVE_PATH = f"../debugging/cropped_parts/{VIDEO_NAME}"
 
 FRAME_COUNT = 1000
 FRAME_RATE = 20
 
-
-# Temporary image function for prediction
-def predict(img):
-    return True
-
+model = YOLO("yolov8n-pose.pt")
 
 # Draws transparent box inside an input image
 def transparent_box(image, x, y, w, h, color=(0, 200, 0), alpha=0.4):
@@ -33,7 +33,7 @@ def transparent_box(image, x, y, w, h, color=(0, 200, 0), alpha=0.4):
 
 
 if __name__ == "__main__":
-    model = YOLO("yolov8n-pose.pt")
+    
     video = cv2.VideoCapture(VIDEO_PATH)
 
     for i in range(FRAME_COUNT):
@@ -100,7 +100,7 @@ if __name__ == "__main__":
 
                 # Crop and save persons from images
                 # Expand the person according to expand constant.
-                scale_expand = 0.1
+                scale_expand = 0.2 #dogu
                 len_expand_y = (y2 - y1) * scale_expand
                 len_expand_x = (x2 - x1) * scale_expand
                 y1_expanded = int(y1 - len_expand_y)
@@ -115,10 +115,10 @@ if __name__ == "__main__":
 
                 head_cropped = frame[body_up_Y + head_height_new : body_up_Y, x1:x2]
                 body_cropped = frame[body_up_Y:body_low_Y, x1:x2]
-
-                # Get prediction results and modify frame accordingly.
-                helmet_status = predict(head_cropped)
-                vest_status = predict(body_cropped)
+                
+                # Predict
+                helmet_status = predict(person_cropped, "helmet")
+                vest_status = predict(person_cropped, "vest")
 
                 helmet_color, vest_color = (200, 200, 0), (200, 200, 0)
                 if helmet_status:
