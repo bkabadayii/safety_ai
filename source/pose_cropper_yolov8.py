@@ -1,9 +1,7 @@
 import numpy as np
 import cv2
 from ultralytics import YOLO
-import time
 import copy
-import math
 
 # object detector model
 from object_detector import predict
@@ -120,16 +118,9 @@ if __name__ == "__main__":
                 helmet_status = predict(person_cropped, "helmet")
                 vest_status = predict(person_cropped, "vest")
 
-                helmet_color, vest_color = (200, 200, 0), (200, 200, 0)
-                if helmet_status:
-                    helmet_color = (0, 200, 0)
-                else:
-                    helmet_color = (0, 0, 200)
-
-                if vest_status:
-                    vest_color = (0, 200, 0)
-                else:
-                    vest_color = (0, 0, 200)
+                # Set color
+                helmet_color = (0, 200, 0) if helmet_status else (0, 0, 200)
+                vest_color = (0, 200, 0) if vest_status else (0, 0, 200)
 
                 # Display helmet status
                 annotated_frame = transparent_box(
