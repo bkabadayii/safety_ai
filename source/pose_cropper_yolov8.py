@@ -4,15 +4,33 @@ from ultralytics import YOLO
 import time
 import copy
 
-VIDEO_NAME = "betonsa_2"
+DEBUG_MODE = True
+
+VIDEO_NAME = "video0"
 VIDEO_PATH = f"../data/akcansa_share/{VIDEO_NAME}.mp4"
 # VIDEO_PATH = "../data/train6_nohelmet.jpg"
 
-CROP_AND_SAVE = True  # True if you want to crop and save body parts
+CROP_AND_SAVE = False  # True if you want to crop and save body parts
 SAVE_PATH = f"../data/cropped_parts/{VIDEO_NAME}"
 
 FRAME_COUNT = 1000
 FRAME_RATE = 20
+
+
+# Temporary image function for prediction
+def predict(img):
+    return True
+
+
+# Draws transparent box inside an input image
+def transparent_box(image, x, y, w, h, color=(0, 200, 0), alpha=0.4):
+    overlay = copy.deepcopy(image)
+    cv2.rectangle(overlay, (x, y), (x + w, y + h), color, -1)  # A filled rectangle
+
+    # Following line overlays transparent rectangle over the image
+    image_new = cv2.addWeighted(overlay, alpha, image, 1 - alpha, 0)
+    return image_new
+
 
 if __name__ == "__main__":
     model = YOLO("yolov8n-pose.pt")
@@ -44,7 +62,7 @@ if __name__ == "__main__":
                 right_shoulder_Y = int(current_keypoints[6][1])
                 min_shoulder_Y = max(left_shoulder_Y, right_shoulder_Y)
 
-                scale_head = 1.5
+                scale_head = 1.2
                 head_height_new = int(scale_head * (top_y - min_shoulder_Y))
 
                 # Crop body
@@ -91,18 +109,55 @@ if __name__ == "__main__":
                 x2_expanded = int(x2 + len_expand_x)
 
                 # Crop and save the image.
-                person_cropped = annotated_frame[
-                    y1_expanded:y2_expanded, x1_expanded:x2_expanded
-                ]
-                cv2.imwrite(f"{SAVE_PATH}/person_{i}_{j}.jpg", person_cropped)
+                person_cropped = frame[y1_expanded:y2_expanded, x1_expanded:x2_expanded]
+                if CROP_AND_SAVE:
+                    cv2.imwrite(f"{SAVE_PATH}/person_{i}_{j}.jpg", person_cropped)
+
+                head_cropped = frame[body_up_Y + head_height_new : body_up_Y, x1:x2]
+                body_cropped = frame[body_up_Y:body_low_Y, x1:x2]
+
+                # Get prediction results and modify frame accordingly.
+                helmet_status = predict(head_cropped)
+                vest_status = predict(body_cropped)
+
+                helmet_color, vest_color = (200, 200, 0), (200, 200, 0)
+                if helmet_status:
+                    helmet_color = (0, 200, 0)
+                else:
+                    helmet_color = (0, 0, 200)
+
+                if vest_status:
+                    vest_color = (0, 200, 0)
+                else:
+                    vest_color = (0, 0, 200)
+
+                # Display helmet status
+                annotated_frame = transparent_box(
+                    annotated_frame,
+                    x1,
+                    body_up_Y,
+                    x2 - x1,
+                    head_height_new - (body_up_Y - min_shoulder_Y),
+                    color=helmet_color,
+                )
+
+                # Display vest status
+                annotated_frame = transparent_box(
+                    annotated_frame,
+                    x1,
+                    body_low_Y,
+                    x2 - x1,
+                    body_up_Y - body_low_Y,
+                    color=vest_color,
+                )
 
                 # Draw rectangles
                 # head
                 cv2.rectangle(
                     annotated_frame,
                     (x1, (min_shoulder_Y + head_height_new)),
-                    (x2, min_shoulder_Y),
-                    color=(0, 255, 0),
+                    (x2, body_up_Y),
+                    color=helmet_color,
                     thickness=2,
                 )
 
@@ -111,7 +166,7 @@ if __name__ == "__main__":
                     annotated_frame,
                     (x1, body_up_Y),
                     (x2, body_low_Y),
-                    color=(255, 0, 0),
+                    color=vest_color,
                     thickness=2,
                 )
                 """
@@ -133,9 +188,12 @@ if __name__ == "__main__":
                 )
                 """
 
-            cv2.imshow("Body Detector", annotated_frame)
-            cv2.imwrite("../data/akcansa_share/test.jpg", annotated_frame)
-            annotated_frame = cv2.cvtColor(annotated_frame, cv2.COLOR_BGR2RGB)
+            cv2.imshow("Safety Equipment Detector", annotated_frame)
+            # Debug imwrites
+            if DEBUG_MODE:
+                cv2.imwrite("../data/debug/test.jpg", annotated_frame)
+                cv2.imwrite("../data/debug/head_cropped.jpg", head_cropped)
+                cv2.imwrite("../data/debug/body_cropped.jpg", body_cropped)
 
             if cv2.waitKey(1) & 0xFF == ord("q"):
                 break
