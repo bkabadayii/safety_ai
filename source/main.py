@@ -30,15 +30,15 @@ FRAME_COUNT = 1000
 #-------------------------------------------------------
 ### Configurations
 # Scaling percentage of original frame
-conf_level = 0.4
+CONF_LEVEL = 0.4
 # Threshold of centers ( old\new)
-thr_centers = 200
+THR_CENTERS = 200
 #Number of max frames to consider a object lost 
-frame_max = 24
+FRAME_MAX = 24
 # Number of max tracked centers stored 
-patience = 100
+PATIENCE = 100
 # ROI area color transparency
-alpha = 0.1 #unused
+ALPHA = 0.1 #unused
 #-------------------------------------------------------
 # Reading video with cv2
 video = cv2.VideoCapture(VIDEO_PATH)
@@ -50,30 +50,30 @@ class_IDS = [0] # default id for person is 0
 centers_old = {}
 obj_id = 0
 count_p = 0
-lastKey = ''
+last_key = ''
 #-------------------------------------------------------
 
 #temp funcs
 def detectWorkers():
     return 
 
-def filter_tracks(centers, patience):
+def filter_tracks(centers, PATIENCE):
     """Function to filter track history"""
     filter_dict = {}
     for k, i in centers.items():
         d_frames = i.items()
-        filter_dict[k] = dict(list(d_frames)[-patience:])
+        filter_dict[k] = dict(list(d_frames)[-PATIENCE:])
 
     return filter_dict
 
 
-def update_tracking(centers_old,obj_center, thr_centers, lastKey, frame, frame_max):
+def update_tracking(centers_old,obj_center, THR_CENTERS, last_key, frame, FRAME_MAX):
     """Function to update track of objects"""
     is_new = 0
     lastpos = [(k, list(center.keys())[-1], list(center.values())[-1]) for k, center in centers_old.items()]
-    lastpos = [(i[0], i[2]) for i in lastpos if abs(i[1] - frame) <= frame_max]
+    lastpos = [(i[0], i[2]) for i in lastpos if abs(i[1] - frame) <= FRAME_MAX]
     # Calculating distance from existing centers points
-    previous_pos = [(k,obj_center) for k,centers in lastpos if (np.linalg.norm(np.array(centers) - np.array(obj_center)) < thr_centers)]
+    previous_pos = [(k,obj_center) for k,centers in lastpos if (np.linalg.norm(np.array(centers) - np.array(obj_center)) < THR_CENTERS)]
     # if distance less than a threshold, it will update its positions
     if previous_pos:
         id_obj = previous_pos[0][0]
@@ -81,18 +81,18 @@ def update_tracking(centers_old,obj_center, thr_centers, lastKey, frame, frame_m
     
     # Else a new ID will be set to the given object
     else:
-        if lastKey:
-            last = lastKey.split('D')[1]
+        if last_key:
+            last = last_key.split('D')[1]
             id_obj = 'ID' + str(int(last)+1)
         else:
             id_obj = 'ID0'
             
         is_new = 1
         centers_old[id_obj] = {frame:obj_center}
-        lastKey = list(centers_old.keys())[-1]
+        last_key = list(centers_old.keys())[-1]
 
     
-    return centers_old, id_obj, is_new, lastKey
+    return centers_old, id_obj, is_new, last_key
 
 
 #loading a YOLO model 
@@ -115,7 +115,7 @@ if __name__ == "__main__":
         if success:
             
             annotated_frame = copy.deepcopy(frame)
-            y_hat = model.predict(frame, conf = conf_level, classes = class_IDS)
+            y_hat = model.predict(frame, conf = CONF_LEVEL, classes = class_IDS)
 
             boxes   = y_hat[0].boxes.xyxy.cpu().numpy()
             conf    = y_hat[0].boxes.conf.cpu().numpy()
@@ -139,7 +139,7 @@ if __name__ == "__main__":
                 center_x, center_y = int(((x2+x1))/2), int((y1+ y2)/2)
                 
                 #Updating the tracking for each object
-                centers_old, id_obj, is_new, lastKey = update_tracking(centers_old, (center_x, center_y), thr_centers, lastKey, i, frame_max)
+                centers_old, id_obj, is_new, last_key = update_tracking(centers_old, (center_x, center_y), THR_CENTERS, last_key, i, FRAME_MAX)
                 
                 #Updating people in roi
                 count_p+=is_new
@@ -169,8 +169,10 @@ if __name__ == "__main__":
 
                 # Drawing center and bounding-box in the given frame 
                 cv2.rectangle(annotated_frame, (x1, y2), (x2, y1), (0,0,255), 2) # box
+                """
                 for center_x,center_y in centers_old[id_obj].values():
                     cv2.circle(annotated_frame, (center_x,center_y), 5,(0,0,255),-1) # center of box
+                """
                 
                 # Drawing above the bounding-box the name of class recognized.
                 """
@@ -180,7 +182,7 @@ if __name__ == "__main__":
                 
 
                 worker_Images.append(workerImg)
-                worker_info.append((lastKey, (x1,y1), (x2,y2)))
+                worker_info.append((last_key, (x1,y1), (x2,y2)))
 
             # for worker in workers_cropped -> predict yap -> worker objects listesine ekle
             worker_objects = []
@@ -214,7 +216,7 @@ if __name__ == "__main__":
             """
 
             # Filtering tracks history
-            centers_old = filter_tracks(centers_old, patience)
+            centers_old = filter_tracks(centers_old, PATIENCE)
             
             cv2.imshow("Safety Equipment Detector", annotated_frame)
 
