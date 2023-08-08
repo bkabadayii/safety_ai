@@ -21,6 +21,8 @@ EQUIPMENTS_WIDTH = 100
 EQUIPMENTS_HEIGHT = 100
 
 TEXT_FONT = cv2.FONT_HERSHEY_PLAIN
+TEXT_SIZE = 0.7
+TEXT_THICKNESS = 2
 
 
 # Draws transparent box inside an input image
@@ -35,9 +37,9 @@ def transparent_box(image, x1, y1, x2, y2, color=(0, 200, 0), alpha=0.4):
 
 def prepare_display(frame, workers):
     display_frame = copy.deepcopy(frame)
-    #frame_width = int(frame.get(cv2.CAP_PROP_FRAME_WIDTH))
+    # frame_width = int(frame.get(cv2.CAP_PROP_FRAME_WIDTH))
     frame_width = int(frame.shape[0])
-    #frame_height = int(frame.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    # frame_height = int(frame.get(cv2.CAP_PROP_FRAME_HEIGHT))
     frame_height = int(frame.shape[1])
 
     for worker in workers:
@@ -69,7 +71,7 @@ def prepare_display(frame, workers):
 
         # Set equipments frame coordinates to be on the right
         equipments_x1, equipments_x2 = x1, x1 + EQUIPMENTS_WIDTH
-        equipments_y1, equipments_y2 = y1, y2
+        equipments_y1, equipments_y2 = y2, y1
         # If equipments frame overflows, put it on the left
         if equipments_x2 > frame_width:
             equipments_x1 = x1 - EQUIPMENTS_WIDTH
@@ -79,36 +81,47 @@ def prepare_display(frame, workers):
         if equipments_x1 < 0:
             equipments_x1 = 0
 
+        # Put equipments frame
+        display_frame = transparent_box(
+            display_frame,
+            equipments_x1,
+            equipments_y1 - 60,
+            x2,
+            y2,
+            color=(0, 255, 255),
+            alpha=0.7,
+        )
+
         # Put worker id text
         cv2.putText(
             display_frame,
             f"Worker ID: {worker_id[2:]}",
-            (equipments_x1 + 5, equipments_y1 - 5),
+            (equipments_x1 + 20, equipments_y1 - 10),
             TEXT_FONT,
-            1,
-            equipments_color,
-            2,
+            TEXT_SIZE,
+            EQUIPMENTS_COLOR,
+            TEXT_THICKNESS,
         )
 
         # Put helmet status text
         cv2.putText(
             display_frame,
-            f"Helmet: {has_helmet}, probability: {np.round(helmet_prob,2)}",
-            (equipments_x1 + 5, equipments_y1 - 15),
+            f"Helmet: {has_helmet},   probability: {np.round(helmet_prob,2)}",
+            (equipments_x1 + 20, equipments_y1 - 25),
             TEXT_FONT,
-            1,
+            TEXT_SIZE,
             helmet_color,
-            2,
+            TEXT_THICKNESS,
         )
 
         # Put vest status text
         cv2.putText(
             display_frame,
-            f"Vest: {has_vest}, probability: {np.round(vest_prob,2)}",
-            (equipments_x1 + 5, equipments_y1 - 25),
+            f"Vest: {has_vest},   probability: {np.round(vest_prob,2)}",
+            (equipments_x1 + 20, equipments_y1 - 40),
             TEXT_FONT,
-            1,
-            equipments_color,
-            2,
+            TEXT_SIZE,
+            vest_color,
+            TEXT_THICKNESS,
         )
     return display_frame
