@@ -14,7 +14,7 @@ OUT_PATH = f"../data/debug/result.mp4"
 
 
 VIDEO_NAME = "betonsa_3"
-VIDEO_PATH = f"../data_collection/video-data/recorded/{VIDEO_NAME}.mp4"
+VIDEO_PATH = f"../data/video_data/{VIDEO_NAME}.mp4"
 
 CROP_AND_SAVE = False  # True if you want to crop and save body parts
 SAVE_PATH = f"../debugging/cropped_parts/{VIDEO_NAME}"
@@ -221,7 +221,8 @@ if __name__ == "__main__":
                     cv2.imwrite("../data/debug/body_cropped.jpg", body_cropped)
 
             cv2.imshow("Safety Equipment Detector", annotated_frame)
-            out.write(annotated_frame)
+            if(SAVE_OUTPUT==True):
+                out.write(annotated_frame)
 
             if cv2.waitKey(1) & 0xFF == ord("q"):
                 break
