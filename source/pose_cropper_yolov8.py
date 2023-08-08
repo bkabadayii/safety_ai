@@ -8,8 +8,13 @@ from object_detector import predict
 
 DEBUG_MODE = False
 
-VIDEO_NAME = "video0"
-VIDEO_PATH = f"../data_collection/video-data/recorded/{VIDEO_NAME}.mp4"
+# Output video
+SAVE_OUTPUT = True
+OUT_PATH = f"../data/debug/result.mp4"
+
+
+VIDEO_NAME = "betonsa_2"
+VIDEO_PATH = f"../data/akcansa_share/{VIDEO_NAME}.mp4"
 # VIDEO_PATH = "../data/train6_nohelmet.jpg"
 
 CROP_AND_SAVE = False  # True if you want to crop and save body parts
@@ -19,6 +24,7 @@ FRAME_COUNT = 1000
 FRAME_RATE = 20
 
 model = YOLO("yolov8n-pose.pt")
+
 
 # Draws transparent box inside an input image
 def transparent_box(image, x, y, w, h, color=(0, 200, 0), alpha=0.4):
@@ -31,8 +37,15 @@ def transparent_box(image, x, y, w, h, color=(0, 200, 0), alpha=0.4):
 
 
 if __name__ == "__main__":
-    
     video = cv2.VideoCapture(VIDEO_PATH)
+
+    # Output video properties
+    frame_width = int(video.get(cv2.CAP_PROP_FRAME_WIDTH))
+    frame_height = int(video.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    if SAVE_OUTPUT:
+        fps = int(video.get(cv2.CAP_PROP_FPS))
+        fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+        out = cv2.VideoWriter(OUT_PATH, fourcc, fps, (frame_width, frame_height))
 
     for i in range(FRAME_COUNT):
         success, frame = video.read()
@@ -75,6 +88,7 @@ if __name__ == "__main__":
                     min_hip_Y - (scale_body_coord * body_height)
                 ), int(max_shoulder_Y + (scale_body_coord * body_height))
 
+                """
                 # Crop Hands
                 left_wrist = current_keypoints[9]
                 right_wrist = current_keypoints[10]
@@ -95,10 +109,11 @@ if __name__ == "__main__":
                 left_hand_y1, left_hand_y2 = int(left_wrist[1] - hand_radius), int(
                     left_wrist[1] + hand_radius
                 )
+                """
 
                 # Crop and save persons from images
                 # Expand the person according to expand constant.
-                scale_expand = 0.2 #dogu
+                scale_expand = 0.2  # dogu
                 len_expand_y = (y2 - y1) * scale_expand
                 len_expand_x = (x2 - x1) * scale_expand
                 y1_expanded = int(y1 - len_expand_y)
@@ -106,14 +121,26 @@ if __name__ == "__main__":
                 x1_expanded = int(x1 - len_expand_x)
                 x2_expanded = int(x2 + len_expand_x)
 
+                if y1_expanded < 0:
+                    y1_expanded = 0
+                if y2_expanded > frame_height:
+                    y2_expanded = frame_height - 1
+                if x1_expanded < 0:
+                    x1_expanded = 0
+                if x2_expanded > frame_width:
+                    x2_expanded = frame_width - 1
+
                 # Crop and save the image.
                 person_cropped = frame[y1_expanded:y2_expanded, x1_expanded:x2_expanded]
+
                 if CROP_AND_SAVE:
                     cv2.imwrite(f"{SAVE_PATH}/person_{i}_{j}.jpg", person_cropped)
 
+                # Exception handling for human bodies overflowing the boundries of the frame.
+
                 head_cropped = frame[body_up_Y + head_height_new : body_up_Y, x1:x2]
                 body_cropped = frame[body_up_Y:body_low_Y, x1:x2]
-                
+
                 # Predict
                 helmet_status = predict(person_cropped, "helmet")
                 vest_status = predict(person_cropped, "vest")
@@ -179,12 +206,14 @@ if __name__ == "__main__":
                 )
                 """
 
+                # Debug imwrites
+                if DEBUG_MODE and j == 0:
+                    cv2.imwrite("../data/debug/test.jpg", annotated_frame)
+                    cv2.imwrite("../data/debug/head_cropped.jpg", head_cropped)
+                    cv2.imwrite("../data/debug/body_cropped.jpg", body_cropped)
+
             cv2.imshow("Safety Equipment Detector", annotated_frame)
-            # Debug imwrites
-            if DEBUG_MODE:
-                cv2.imwrite("../data/debug/test.jpg", annotated_frame)
-                cv2.imwrite("../data/debug/head_cropped.jpg", head_cropped)
-                cv2.imwrite("../data/debug/body_cropped.jpg", body_cropped)
+            out.write(annotated_frame)
 
             if cv2.waitKey(1) & 0xFF == ord("q"):
                 break
