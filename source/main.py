@@ -11,8 +11,9 @@ from object_detector import predict
 # Worker class
 from worker import Worker
 
-#visualization
-#from visualize import transparent_box
+#display
+from displays import prepare_display
+#from PIL import Image as im
 
 DEBUG_MODE = False
 
@@ -21,8 +22,8 @@ DEBUG_MODE = False
 #OUT_PATH = f"../data/debug/result.mp4"
 
 # 
-VIDEO_NAME = "video0"
-VIDEO_PATH = f"./data/video_data/{VIDEO_NAME}.mp4"
+VIDEO_NAME = "betonsa_3"
+VIDEO_PATH = f"../data/video_data/{VIDEO_NAME}.mp4"
 
 FRAME_COUNT = 1000
 
@@ -126,7 +127,8 @@ if __name__ == "__main__":
             #Translating the numeric class labels to text
             labels = [dict_classes[i] for i in classes]
             
-            workers = {}
+            worker_info = [] # (id, coord1, coord2)
+            worker_Images = []
             
             # For each people, draw the bounding-box and add scaled and cropped images to list
             for ix, row in enumerate(positions_frame.iterrows()):
@@ -163,7 +165,7 @@ if __name__ == "__main__":
                     x2_expanded = frame_width - 1
                 
                 # Cropping worker image
-                workerImg = frame[y1_expanded:y2_expanded, x1_expanded:x2_expanded]
+                workerImg = frame[y2_expanded:y1_expanded, x1_expanded:x2_expanded]
 
                 # Drawing center and bounding-box in the given frame 
                 cv2.rectangle(annotated_frame, (x1, y2), (x2, y1), (0,0,255), 2) # box
@@ -171,35 +173,45 @@ if __name__ == "__main__":
                     cv2.circle(annotated_frame, (center_x,center_y), 5,(0,0,255),-1) # center of box
                 
                 # Drawing above the bounding-box the name of class recognized.
+                """
                 cv2.putText(img=annotated_frame, text=id_obj+':'+str(np.round(conf[ix],2)),
                             org= (x1,y2-10), fontFace=cv2.FONT_HERSHEY_TRIPLEX, fontScale=0.8, color=(0, 0, 255),thickness=1)
+                """
+                
 
-                # ID : list(Image, tuple(TopLeft), tuple(BottomRight) )
-                workers[lastKey] = [workerImg, (x1,y1), (x2,y2)]
-            
-            #for worker in workers_cropped -> predict yap -> worker objects listesine ekle
+                worker_Images.append(workerImg)
+                worker_info.append((lastKey, (x1,y1), (x2,y2)))
+
+            # for worker in workers_cropped -> predict yap -> worker objects listesine ekle
             worker_objects = []
-            for key in workers.keys():
+            
+            for i in range(len(worker_Images)):
                 
                 #coordinates
-                worker_topLeft = workers[key][1]
-                worker_bottomRight = workers[key][2]
+                worker_topLeft = worker_info[i][1]
+                worker_bottomRight = worker_info[i][2]
                 
                 #equipments
-                worker_helmet = predict(workers[key][0], "helmet") # status, conf
-                worker_vest = predict(workers[key][0], "vest") # status, conf
+                worker_helmet = predict(worker_Images[i], "helmet") # status, conf
+                worker_vest = predict(worker_Images[i], "vest") # status, conf
                 
                 equipments = {}
                 equipments["helmet"] = worker_helmet 
                 equipments["vest"] = worker_vest
                 
-                worker_instance = Worker(worker_topLeft, worker_bottomRight, key, equipments)
+                worker_instance = Worker(worker_topLeft, worker_bottomRight, worker_info[i][0], equipments)
                 worker_objects.append(worker_instance)
-               
+                
+            
+            # display
+            annotated_frame = prepare_display(annotated_frame, worker_objects)
+            
             #drawing the number of people
+            """
             cv2.putText(img=annotated_frame, text=f'Counts People in ROI: {count_p}', 
                         org= (30,40), fontFace=cv2.FONT_HERSHEY_TRIPLEX, 
                         fontScale=1.5, color=(255, 0, 0), thickness=1)
+            """
 
             # Filtering tracks history
             centers_old = filter_tracks(centers_old, patience)
