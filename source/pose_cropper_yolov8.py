@@ -13,9 +13,8 @@ SAVE_OUTPUT = True
 OUT_PATH = f"../data/debug/result.mp4"
 
 
-VIDEO_NAME = "betonsa_2"
+VIDEO_NAME = "video0"
 VIDEO_PATH = f"../data/akcansa_share/{VIDEO_NAME}.mp4"
-# VIDEO_PATH = "../data/train6_nohelmet.jpg"
 
 CROP_AND_SAVE = False  # True if you want to crop and save body parts
 SAVE_PATH = f"../debugging/cropped_parts/{VIDEO_NAME}"
@@ -121,6 +120,7 @@ if __name__ == "__main__":
                 x1_expanded = int(x1 - len_expand_x)
                 x2_expanded = int(x2 + len_expand_x)
 
+                # Exception handling for human bodies overflowing the boundries of the frame.
                 if y1_expanded < 0:
                     y1_expanded = 0
                 if y2_expanded > frame_height:
@@ -129,6 +129,10 @@ if __name__ == "__main__":
                     x1_expanded = 0
                 if x2_expanded > frame_width:
                     x2_expanded = frame_width - 1
+                if body_up_Y < 0:
+                    body_up_Y = 0
+                if body_low_Y < 0:
+                    body_lowY = 0
 
                 # Crop and save the image.
                 person_cropped = frame[y1_expanded:y2_expanded, x1_expanded:x2_expanded]
@@ -136,14 +140,12 @@ if __name__ == "__main__":
                 if CROP_AND_SAVE:
                     cv2.imwrite(f"{SAVE_PATH}/person_{i}_{j}.jpg", person_cropped)
 
-                # Exception handling for human bodies overflowing the boundries of the frame.
-
-                head_cropped = frame[body_up_Y + head_height_new : body_up_Y, x1:x2]
-                body_cropped = frame[body_up_Y:body_low_Y, x1:x2]
+                head_cropped = frame[y1_expanded:body_up_Y, x1_expanded:x2_expanded]
+                body_cropped = frame[body_up_Y:body_low_Y, x1_expanded:x2_expanded]
 
                 # Predict
-                helmet_status = predict(person_cropped, "helmet")
-                vest_status = predict(person_cropped, "vest")
+                helmet_status = predict(head_cropped, "helmet")
+                vest_status = predict(body_cropped, "vest")
 
                 # Set color
                 helmet_color = (0, 200, 0) if helmet_status else (0, 0, 200)
