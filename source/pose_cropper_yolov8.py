@@ -13,8 +13,8 @@ SAVE_OUTPUT = True
 OUT_PATH = f"../data/debug/result.mp4"
 
 
-VIDEO_NAME = "video0"
-VIDEO_PATH = f"../data/akcansa_share/{VIDEO_NAME}.mp4"
+VIDEO_NAME = "betonsa_3"
+VIDEO_PATH = f"../data_collection/video-data/recorded/{VIDEO_NAME}.mp4"
 
 CROP_AND_SAVE = False  # True if you want to crop and save body parts
 SAVE_PATH = f"../debugging/cropped_parts/{VIDEO_NAME}"
@@ -23,7 +23,6 @@ FRAME_COUNT = 1000
 FRAME_RATE = 20
 
 model = YOLO("yolov8n-pose.pt")
-
 
 # Draws transparent box inside an input image
 def transparent_box(image, x, y, w, h, color=(0, 200, 0), alpha=0.4):
@@ -144,8 +143,8 @@ if __name__ == "__main__":
                 body_cropped = frame[body_up_Y:body_low_Y, x1_expanded:x2_expanded]
 
                 # Predict
-                helmet_status = predict(head_cropped, "helmet")
-                vest_status = predict(body_cropped, "vest")
+                helmet_status, helmet_prob = predict(person_cropped, "helmet")
+                vest_status, vest_prob = predict(person_cropped, "vest")
 
                 # Set color
                 helmet_color = (0, 200, 0) if helmet_status else (0, 0, 200)
@@ -170,6 +169,13 @@ if __name__ == "__main__":
                     body_up_Y - body_low_Y,
                     color=vest_color,
                 )
+                
+                # Display texts
+                helmet_text = f"Helmet: {'Detected' if helmet_status else 'Not Detected'}, Prob: {helmet_prob:.2f}"
+                cv2.putText(annotated_frame, helmet_text, (x1, y1 - 30), cv2.FONT_HERSHEY_SIMPLEX, 0.6, helmet_color, 2)
+                
+                vest_text = f"Vest: {'Detected' if vest_status else 'Not Detected'}, Prob: {vest_prob:.2f}"
+                cv2.putText(annotated_frame, vest_text, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, vest_color, 2)
 
                 # Draw rectangles
                 # head
