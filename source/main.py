@@ -6,7 +6,10 @@ import copy
 import pandas as pd
 
 # object detector model
-#from object_detector import predict
+from object_detector import predict
+
+# Worker class
+from worker import Worker
 
 #visualization
 #from visualize import transparent_box
@@ -123,7 +126,8 @@ if __name__ == "__main__":
             #Translating the numeric class labels to text
             labels = [dict_classes[i] for i in classes]
             
-            workers_cropped = []
+            workers = {}
+            
             # For each people, draw the bounding-box and add scaled and cropped images to list
             for ix, row in enumerate(positions_frame.iterrows()):
                 # Getting the coordinates of each vehicle (row)
@@ -158,23 +162,40 @@ if __name__ == "__main__":
                 if x2_expanded > frame_width:
                     x2_expanded = frame_width - 1
                 
-                workers_cropped.append(frame[y1_expanded:y2_expanded, x1_expanded:x2_expanded])
+                # Cropping worker image
+                workerImg = frame[y1_expanded:y2_expanded, x1_expanded:x2_expanded]
 
-                # drawing center and bounding-box in the given frame 
+                # Drawing center and bounding-box in the given frame 
                 cv2.rectangle(annotated_frame, (x1, y2), (x2, y1), (0,0,255), 2) # box
                 for center_x,center_y in centers_old[id_obj].values():
                     cv2.circle(annotated_frame, (center_x,center_y), 5,(0,0,255),-1) # center of box
                 
-                #Drawing above the bounding-box the name of class recognized.
+                # Drawing above the bounding-box the name of class recognized.
                 cv2.putText(img=annotated_frame, text=id_obj+':'+str(np.round(conf[ix],2)),
                             org= (x1,y2-10), fontFace=cv2.FONT_HERSHEY_TRIPLEX, fontScale=0.8, color=(0, 0, 255),thickness=1)
 
+                # ID : list(Image, tuple(TopLeft), tuple(BottomRight) )
+                workers[lastKey] = [workerImg, (x1,y1), (x2,y2)]
             
             #for worker in workers_cropped -> predict yap -> worker objects listesine ekle
             worker_objects = []
-            for worker in workers_cropped:
-                pass
-            
+            for key in workers.keys():
+                
+                #coordinates
+                worker_topLeft = workers[key][1]
+                worker_bottomRight = workers[key][2]
+                
+                #equipments
+                worker_helmet = predict(workers[key][0], "helmet") # status, conf
+                worker_vest = predict(workers[key][0], "vest") # status, conf
+                
+                equipments = {}
+                equipments["helmet"] = worker_helmet 
+                equipments["vest"] = worker_vest
+                
+                worker_instance = Worker(worker_topLeft, worker_bottomRight, key, equipments)
+                worker_objects.append(worker_instance)
+               
             #drawing the number of people
             cv2.putText(img=annotated_frame, text=f'Counts People in ROI: {count_p}', 
                         org= (30,40), fontFace=cv2.FONT_HERSHEY_TRIPLEX, 
