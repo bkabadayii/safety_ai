@@ -2,3 +2,4 @@ data
 .vscode
 .DS_Store
 data_collection
+__pycache__
