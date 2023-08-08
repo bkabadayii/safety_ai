@@ -3,3 +3,5 @@ data
 .DS_Store
 data_collection
 __pycache__
+C.pt
+V.pt
