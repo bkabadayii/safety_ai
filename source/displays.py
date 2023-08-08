@@ -2,6 +2,8 @@ import cv2
 import numpy as np
 import copy
 
+from torch import round
+
 # Class id 0: Helmet
 # Class id 1: Vest
 
@@ -18,7 +20,7 @@ EQUIPMENTS_THICKNESS = 2
 EQUIPMENTS_WIDTH = 100
 EQUIPMENTS_HEIGHT = 100
 
-TEXT_FONT = cv2.FONT_HERSHEY_SIMPLEX
+TEXT_FONT = cv2.FONT_HERSHEY_PLAIN
 
 
 # Draws transparent box inside an input image
@@ -33,8 +35,11 @@ def transparent_box(image, x1, y1, x2, y2, color=(0, 200, 0), alpha=0.4):
 
 def prepare_display(frame, workers):
     display_frame = copy.deepcopy(frame)
-    frame_width = int(frame.get(cv2.CAP_PROP_FRAME_WIDTH))
-    frame_height = int(frame.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    #frame_width = int(frame.get(cv2.CAP_PROP_FRAME_WIDTH))
+    frame_width = int(frame.shape[0])
+    #frame_height = int(frame.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    frame_height = int(frame.shape[1])
+
     for worker in workers:
         worker_id = worker.workerID
         has_helmet, helmet_prob = worker.equipments["helmet"]
@@ -77,7 +82,7 @@ def prepare_display(frame, workers):
         # Put worker id text
         cv2.putText(
             display_frame,
-            f"Worker ID: {worker_id}",
+            f"Worker ID: {worker_id[2:]}",
             (equipments_x1 + 5, equipments_y1 - 5),
             TEXT_FONT,
             1,
@@ -88,7 +93,7 @@ def prepare_display(frame, workers):
         # Put helmet status text
         cv2.putText(
             display_frame,
-            f"Helmet: {has_helmet}, probability: {round(helmet_prob, 2)}",
+            f"Helmet: {has_helmet}, probability: {np.round(helmet_prob,2)}",
             (equipments_x1 + 5, equipments_y1 - 15),
             TEXT_FONT,
             1,
@@ -99,7 +104,7 @@ def prepare_display(frame, workers):
         # Put vest status text
         cv2.putText(
             display_frame,
-            f"Vest: {has_vest}, probability: {round(vest_prob, 2)}",
+            f"Vest: {has_vest}, probability: {np.round(vest_prob,2)}",
             (equipments_x1 + 5, equipments_y1 - 25),
             TEXT_FONT,
             1,
