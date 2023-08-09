@@ -33,7 +33,7 @@ class Worker():
     #temp
     def __repr__(self):
         id = "\nWorker: "+self.workerID
-        coord = "\nCoordinates: ("+ str(self.topLeftCoordinates[0]) + "," + str(self.topLeftCoordinates[1]) + ") " + ", (" + str(self.bottomRightCoordinates[0]) + "," + str(self.bottomRightCoordinates[1]) + ") " + self.bottomRightCoordinates+"\n"
+        coord = "\nCoordinates: ("+ str(self.topLeftCoordinates[0]) + "," + str(self.topLeftCoordinates[1]) + ") " + ", (" + str(self.bottomRightCoordinates[0]) + "," + str(self.bottomRightCoordinates[1]) + ") " + str(self.bottomRightCoordinates)+"\n"
         return "--------------------------------"+id+coord+"--------------------------------"
     
     def getCoordinates(self):
