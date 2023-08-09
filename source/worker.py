@@ -33,7 +33,7 @@ class Worker():
     #temp
     def __repr__(self):
         id = "\nWorker: "+self.workerID
-        coord = "\nCoordinates: "+ self.topLeftCoordinates + ", " + self.bottomRightCoordinates
+        coord = "\nCoordinates: "+ self.topLeftCoordinates + ", " + self.bottomRightCoordinates+"\n"
         return "--------------------------------"+id+coord+"--------------------------------"
     
     def getCoordinates(self):
