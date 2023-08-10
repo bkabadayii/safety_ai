@@ -2,6 +2,7 @@ from ultralytics import YOLO
 
 modelC = YOLO("../final_model/C.pt")
 modelV = YOLO("../final_model/V.pt")
+modelH = YOLO("../final_model/H.pt")
 
 threshold = 0.40
 
@@ -37,11 +38,11 @@ def runVestModel(img):
 def runHelmetModel(img):
     
     
-    results = modelC(img)
+    results = modelH(img)
     
     for res in results:
         if(len(res.boxes.cls)>0):
-            helmet_status = res.boxes.cls[0].item() == 0 # 0 for 'helmet' and 1 for 'vest' in modelC.
+            helmet_status = res.boxes.cls[0].item() == 1 # 1 for 'helmet' and 0 for 'head' in modelC.
             status_prob = res.boxes.conf[0].item()
         else:
             helmet_status = False
