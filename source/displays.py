@@ -95,7 +95,7 @@ def prepare_display(frame, workers):
         # Put worker id text
         cv2.putText(
             display_frame,
-            f"Worker ID: {worker_id[2:]}",
+            f"Worker ID: {worker_id}",
             (equipments_x1 + 20, equipments_y1 - 10),
             TEXT_FONT,
             TEXT_SIZE,
