@@ -5,3 +5,7 @@ data_collection
 __pycache__
 C.pt
 V.pt
+H.pt
+yolov8n.pt
+yolov8s.pt
+yolov8x.pt
