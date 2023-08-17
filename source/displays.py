@@ -23,9 +23,15 @@ TEXT_FONT = cv2.FONT_HERSHEY_PLAIN
 TEXT_SIZE = 0.7
 TEXT_THICKNESS = 2
 
+# Fonts for different sizes
+TITLE_FONT_BIG = ImageFont.truetype("../data/display_images/Barlow-Medium.ttf", 36)
+TITLE_FONT_MEDIUM = ImageFont.truetype("../data/display_images/Barlow-Medium.ttf", 30)
+TITLE_FONT_SMALL = ImageFont.truetype("../data/display_images/Barlow-Medium.ttf", 24)
+BODY_FONT_BIG = ImageFont.truetype("../data/display_images/Barlow-Medium.ttf", 20)
+BODY_FONT_MEDIUM = ImageFont.truetype("../data/display_images/Barlow-Medium.ttf", 16)
+BODY_FONT_SMALL = ImageFont.truetype("../data/display_images/Barlow-Medium.ttf", 12)
+
 # Display images
-TITLE_FONT = ImageFont.truetype("../data/display_images/Barlow-Medium.ttf", 26)
-BODY_FONT = ImageFont.truetype("../data/display_images/Barlow-Medium.ttf", 18)
 IMG = Image.open("../data/display_images/border1.png")
 HELM_ICON = Image.open("../data/display_images/helm.png")
 HELM_ICON = HELM_ICON.resize((80, 80))
@@ -45,12 +51,30 @@ def transparent_box(image, x1, y1, x2, y2, color=(0, 200, 0), alpha=0.4):
     return image_new
 
 
+def decide_font(ratio):
+    """
+    @return: title_font, body_font
+    """
+    if ratio < 0.1:
+        return TITLE_FONT_SMALL, BODY_FONT_SMALL
+    elif ratio < 0.15:
+        return TITLE_FONT_MEDIUM, BODY_FONT_MEDIUM
+
+    return TITLE_FONT_BIG, BODY_FONT_BIG
+
+
+def decide_warning_images_size(ratio):
+    if ratio < 0.15:
+        return 40
+    elif ratio < 0.2:
+        return 60
+
+    return 80
+
+
 def prepare_display(frame, workers):
     display_frame = copy.deepcopy(frame)
-    # frame_width = int(frame.get(cv2.CAP_PROP_FRAME_WIDTH))
     frame_width = int(frame.shape[0])
-    # frame_height = int(frame.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    frame_height = int(frame.shape[1])
 
     for worker in workers:
         worker_id = worker.workerID
@@ -63,14 +87,7 @@ def prepare_display(frame, workers):
 
         helmet_color = COLORS[0] if has_helmet else COLORS[1]
         vest_color = COLORS[0] if has_vest else COLORS[1]
-
-        equipments_color = 0
-        if has_helmet and has_vest:
-            equipments_color = COLORS[0]
-        elif has_helmet or has_vest:
-            equipments_color = COLORS[2]
-        else:
-            equipments_color = COLORS[1]
+        information_panel_height = worker_width * 9 // 16
 
         display_frame = cv2.rectangle(
             display_frame,
@@ -96,7 +113,7 @@ def prepare_display(frame, workers):
         display_frame = transparent_box(
             display_frame,
             equipments_x1,
-            equipments_y1 - 120,
+            equipments_y1 - information_panel_height,
             x2,
             y2,
             color=(90, 90, 90),
@@ -125,7 +142,8 @@ def prepare_display(frame, workers):
             warning_level += 1
 
         img = copy.deepcopy(IMG)
-        img = img.resize((worker_width, 120))
+        information_panel_height = worker_width * 9 // 16
+        img = img.resize((worker_width, information_panel_height))
         I1 = ImageDraw.Draw(img)
         height, width, _channel = np.array(img).shape
         helmet_icon = HELM_ICON.resize((int(0.1 * width), int(0.1 * width)))
@@ -140,74 +158,80 @@ def prepare_display(frame, workers):
         coordVestX, coordVestY = width * 0.15, height * 0.65
         coordVestProbX, coordVestProbY = width * 0.15, height * 0.8
 
+        worker_frame_ratio = worker_width / frame_width
+        title_font, body_font = decide_font(worker_frame_ratio)
+        warnings_size = decide_warning_images_size(worker_frame_ratio)
+
         # Set texts
         I1.text(
             (coordIdX, coordIdY),
             text=f"Worker ID: {worker_id}",
             anchor="mt",
-            font=TITLE_FONT,
+            font=title_font,
             fill=(14, 19, 10),
         )
         I1.text(
             (coordHelmX, coordHelmY),
             text="Helmet Stat:",
-            font=BODY_FONT,
+            font=body_font,
             fill=(14, 19, 10),
         )
         I1.text(
             (coordHelmX + 120, coordHelmY),
             text=f"{has_helmet}",
-            font=BODY_FONT,
+            font=body_font,
             fill=helmet_color,
         )
         I1.text(
             (coordHelmProbX, coordHelmProbY),
             text="Helmet Prob:",
-            font=BODY_FONT,
+            font=body_font,
             fill=(14, 19, 10),
         )
         I1.text(
             (coordHelmProbX + 120, coordHelmProbY),
             text=f"{np.round(helmet_prob, 2)}",
-            font=BODY_FONT,
+            font=body_font,
             fill=(14, 19, 19),
         )
         I1.text(
             (coordVestX, coordVestY),
             text="Vest Stat:",
-            font=BODY_FONT,
+            font=body_font,
             fill=(14, 19, 10),
         )
         I1.text(
             (coordVestX + 100, coordVestY),
             text=f"{has_vest}",
-            font=BODY_FONT,
+            font=body_font,
             fill=vest_color,
         )
         I1.text(
             (coordVestProbX, coordVestProbY),
             text="Vest Prob:",
-            font=BODY_FONT,
+            font=body_font,
             fill=(14, 19, 10),
         )
         I1.text(
             (coordVestProbX + 100, coordVestProbY),
             text=f"{np.round(vest_prob, 2)}",
-            font=BODY_FONT,
+            font=body_font,
             fill=(14, 19, 10),
         )
 
-        temp_display_frame.paste(img, ((x1, y2 - 120)), img)
+        temp_display_frame.paste(img, ((x1, y2 - information_panel_height)), img)
 
         if warning_level == 1:
             temp_display_frame.paste(
-                YELLOW_WARNING.resize((40, 40)),
+                YELLOW_WARNING.resize((warnings_size, warnings_size)),
                 ((x1, y1)),
-                YELLOW_WARNING.resize((40, 40)),
+                YELLOW_WARNING.resize((warnings_size, warnings_size)),
             )
         elif warning_level == 2:
             temp_display_frame.paste(
-                RED_WARNING.resize((40, 40)), ((x1, y1)), RED_WARNING.resize((40, 40))
+                RED_WARNING.resize((warnings_size, warnings_size)),
+                ((x1, y1)),
+                RED_WARNING.resize((warnings_size, warnings_size)),
             )
 
     display_frame = np.array(temp_display_frame)
